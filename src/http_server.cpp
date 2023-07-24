@@ -1,9 +1,10 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <cstdio>
 #include <cassert>
 #include <algorithm>
 #include <cstring>
 #include "http_server.h"
+
+#define DISABLE_MINIZ_SUPPORT   1
 
 // -------------------------------------------------------------------
 // Enable compression by embedding the miniz.c source code here
@@ -63,7 +64,7 @@ namespace HTTP {
     while (true) {
       int n = vsnprintf(data(), size(), fmt, argp);   // Copies N characters // vsnprintf_s could be used, has the same behavior and interrupts the program
       if (n >= size()) {
-        resize(n + 1);
+        resize(n + 1ull);
       }
       else {
         resize(n);
@@ -190,8 +191,8 @@ namespace HTTP {
   // -------------------------------------------------------
   bool CBaseServer::createServer(int port) {
     server = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (server < 0) {
-      printf( "createServer.socket failed\n");
+    if (server == INVALID_SOCKET) {
+      perror( "createServer.socket failed\n");
       return false;
     }
 
@@ -201,12 +202,12 @@ namespace HTTP {
     serv_addr.sin_port = htons(port);
 
     if (bind(server, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-      printf( "createServer.bind failed\n");
+      perror( "createServer.bind failed\n");
       return false;
     }
 
     if (listen(server, 5) < 0) {
-      printf( "createServer.listen failed\n");
+      perror( "createServer.listen failed\n");
       return false;
     }
 

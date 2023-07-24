@@ -8,6 +8,13 @@ extern "C" {
 #include <curl/curl.h>
 }
 
+// Windows specifics
+#ifdef _WIN32
+#define vsnprintf _vsnprintf_s
+#define sscanf sscanf_s
+#pragma comment(lib,"Ws2_32.lib")
+#endif
+
 namespace MiniTwitch {
 
   static const char* url_twitch_authorize = "https://id.twitch.tv/oauth2/authorize";
@@ -17,6 +24,21 @@ namespace MiniTwitch {
   static const std::string url_twitch_game = "https://api.twitch.tv/helix/games?name=";
   static const char* content_type_urlencoded = "Content-Type: application/x-www-form-urlencoded";
   static const char* accept_twitch_tv_json = "Accept: application/vnd.twitchtv.v5+json";
+  static bool        check_ssl_certificates = true;
+
+  // --------------------------------------------
+  bool globalInit() {
+	  // In windows, this will init the winsock stuff
+	  CURLcode rc = curl_global_init(CURL_GLOBAL_ALL);
+	  return rc == CURLcode::CURLE_OK;
+#ifdef _WIN32
+      check_ssl_certificates = false;
+#endif
+  }
+
+  void globalCleanup() {
+	  curl_global_cleanup();
+  }
 
   void from_json(const json& j, MiniTwitch::TokenData& p) {
     j.at("token_type").get_to(p.token_type);
@@ -66,7 +88,11 @@ namespace MiniTwitch {
       curl_easy_setopt(curl, CURLOPT_URL, url_twitch_auth_token);
       curl_easy_setopt(curl, CURLOPT_POST, 1);
       curl_easy_setopt(curl, CURLOPT_POSTFIELDS, content.c_str());
-      //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+
+      if(check_ssl_certificates)
+	    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+      curl_easy_setopt(curl, CURLOPT_VERBOSE, 0);
+
       curl_slist* chunk = curl_slist_append(nullptr, content_type_urlencoded);
       curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
@@ -75,13 +101,15 @@ namespace MiniTwitch {
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, &answer);
       CURLcode res = curl_easy_perform(curl);
       if (res == CURLE_OK) {
-        printf( "Answer is %s\n", answer.c_str());
         p->full_answer = answer;
 
         json j = json::parse(answer.c_str(), nullptr, false);
         if (!j.is_discarded()) {
           p->token = j.get<TokenData>();
           p->auth_state = AuthProcess::eAuthState::CompletedOK;
+        }
+        else {
+          printf("Answer is %s\n", answer.c_str());
         }
 
       } else {
@@ -149,7 +177,7 @@ namespace MiniTwitch {
 
     // Generate some random id so this request is unique
     state.clear();
-    srand( time(nullptr));
+    srand((unsigned)time(nullptr));
     for( int i=0; i<16; ++i ) {
       int v = rand();
       char buf[8];
@@ -159,6 +187,8 @@ namespace MiniTwitch {
     //printf( "State will be %s\n", state.c_str());
     redirect_uri = "http://localhost:" + std::to_string(config.port) + config.callback_auth_url;
 
+    // This url needs to be open in a local browser. The user logins, the answer is redirected to our 
+    // local webserver to continue the login process
     std::string auth_url = url_twitch_authorize + std::string("?response_type=code")
       + "&client_id=" + config.client_id
       + "&redirect_uri=" + redirect_uri
@@ -167,16 +197,19 @@ namespace MiniTwitch {
 
     AuthServer server;
     server.proc = this;
-    server.trace = true;
-
     //server.trace = true;
+
     if (!server.open(config.port)) {
       printf( "Can't start server at port %d\n", config.port);
       return false;
     }
-    printf( "Open.URL\n%s\n", auth_url.c_str());
-
     auth_state = eAuthState::Authorizing;
+
+    printf( "Open.URL\n%s\n", auth_url.c_str());
+#ifdef _WIN32
+    ::ShellExecute(0, 0, auth_url.c_str(), 0, 0, SW_SHOW);
+#endif
+
     while (auth_state == eAuthState::Authorizing) {
       if (!server.tick(1000000)) {
         printf( ".");
@@ -203,6 +236,9 @@ namespace MiniTwitch {
     chunk = curl_slist_append(chunk, accept_twitch_tv_json);
     chunk = curl_slist_append(chunk, header_auth_bearer.c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+
+    if (check_ssl_certificates)
+      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
 
     std::string answer;
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &storeAnswerCallback);

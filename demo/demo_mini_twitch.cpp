@@ -2,7 +2,7 @@
 #include <cstdio>
 #include "mini_twitch.h"
 
-// Comment this line and fill in your configu
+// Create a file 'twitch_config' with the next 3 commented lines, or remove the include and fill in
 #include "twitch_config.h"
 //const char* TWITCH_CLIENT_ID = "<your_client_id>";
 //const char* TWITCH_SECRET    = "<your_secret>";
@@ -69,6 +69,8 @@ bool readToken( TokenData& token ) {
 
 int main(int argc, char** argv)
 {
+  globalInit();
+
   AuthProcess proc;
   
   Config& config = proc.config;
@@ -79,8 +81,7 @@ int main(int argc, char** argv)
   config.scopes.push_back( "channel:read:polls" );
   config.scopes.push_back( "channel:manage:polls" );
 
-  if( !readToken( proc.token ))
-    return -1;
+  readToken( proc.token );
   bool is_ok = proc.start();
   if( !is_ok )
      return -1;
@@ -91,5 +92,7 @@ int main(int argc, char** argv)
   proc.getUserInfo();
   std::string game_id = proc.getGame(TWITCH_GAME_NAME);
   printf( "game_id is %s\n", game_id.c_str());
+
+  globalCleanup();
   return 0;
 }

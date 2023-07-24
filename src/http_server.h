@@ -45,13 +45,13 @@ public:
   struct TRequest {
 
     struct THeaderLine {
-      const char* title;    // 'User-Agent'
-      const char* value;    // 'curl/7.53.0'
+      const char* title = nullptr;    // 'User-Agent'
+      const char* value = nullptr;    // 'curl/7.53.0'
     };
 
     // only supporting GET
     enum eMethod { GET, UNSUPPORTED };
-    eMethod     method;
+    eMethod     method = UNSUPPORTED;
 
     // / or /index.html...
     std::string url;

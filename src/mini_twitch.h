@@ -10,6 +10,10 @@ namespace MiniTwitch
 {
 
   // -------------------------------------------------------
+  bool globalInit();
+  void globalCleanup();
+
+  // -------------------------------------------------------
   using VScopes = std::vector< std::string >;
 
   struct Config {
@@ -37,7 +41,7 @@ namespace MiniTwitch
       CompletedError,
       CompletedOK
     };
-    eAuthState  auth_state = eAuthState::Authorizing;
+    eAuthState  auth_state = eAuthState::NotStarted;
 
     //Answer
     std::string scopes_str;
