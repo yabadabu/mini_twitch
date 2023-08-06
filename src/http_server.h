@@ -6,6 +6,7 @@
 #include <WinSock2.h>
 typedef SOCKET TSocket;
 typedef int socklen_t;
+
 #else
 
 #include <unistd.h>
@@ -14,7 +15,7 @@ typedef int socklen_t;
 #include <netinet/in.h>
 typedef int    TSocket;
 #define closesocket  close
-
+#define INVALID_SOCKET (~0)
 #endif
 
 #include <vector>
