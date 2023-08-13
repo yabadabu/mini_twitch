@@ -20,7 +20,7 @@ namespace MiniTwitch
     std::string client_id;
     std::string secret;
     std::string callback_auth_url;
-    int         port = 3003;
+    int         port = 8080;
     VScopes     scopes;
   };
 

@@ -41,11 +41,11 @@ namespace MiniTwitch {
   }
 
   void from_json(const json& j, MiniTwitch::TokenData& p) {
-    j.at("token_type").get_to(p.token_type);
-    j.at("access_token").get_to(p.access_token);
-    j.at("refresh_token").get_to(p.refresh_token);
-    j.at("expires_in").get_to(p.expires_in);
-    j.at("scope").get_to(p.scope);
+    j.value("token_type", p.token_type);
+    j.value("access_token", p.access_token);
+    j.value("refresh_token", p.refresh_token);
+    j.value("expires_in", p.expires_in);
+    j.value("scope", p.scope);
   }
 
   // --------
@@ -57,11 +57,11 @@ namespace MiniTwitch {
     VScopes     scopes;
   };
   void from_json(const json& j, ValidationAnswer& p) {
-    j.at("client_id").get_to(p.client_id);
-    j.at("login").get_to(p.login);
-    j.at("user_id").get_to(p.user_id);
-    j.at("expires_in").get_to(p.expires_in);
-    j.at("scopes").get_to(p.scopes);
+	j.value("client_id", p.client_id);
+	j.value("login", p.login);
+	j.value("user_id", p.user_id);
+	j.value("expires_in", p.expires_in);
+	j.value("scopes", p.scopes);
   }
 
   static size_t storeAnswerCallback(void *contents, size_t size, size_t nmemb, void *userp) {
